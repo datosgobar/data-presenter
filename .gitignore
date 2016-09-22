@@ -1,0 +1,8 @@
+# No guardar informes
+*.md
+# Pero conservar el README
+!README.md
+# No guardar datasets
+*.csv
+# Tampoco guardar archivos de bytecode
+*.pyc
