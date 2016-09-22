@@ -22,44 +22,26 @@ import time
 import tabulate
 # Imprimir lo que este en cola en STDOUT cuando uno lo pida
 import sys
-
-# Seteo de locale para reconocer "," como separador decimal
-#import locale
-#locale.setlocale(locale.LC_ALL, locale='es_AR.utf8')
+# Leer variables de archivos de configuracion
+import yaml
 
 # Diccionario creado a mano con alias y URL de todo CSV del portal
-URL_DATASETS_PORTAL = {
-    'estructura-organica-pen': 'http://datos.gob.ar/dataset/ad5b0e15-a9ed-40d5-9827-33a0ece12433/resource/b705d8c1-650f-43cc-bde6-68850fcecd21/download/estructura-organica.csv',
-                       'audiencias': 'http://datos.gob.ar/dataset/2889b09e-31ca-4f90-912e-2a50db874e33/resource/dcc74a80-55fa-4e9c-b025-e0d321aa36ee/download/audiencias.csv',
-                       'salarios-pen': 'http://datos.gob.ar/dataset/431381cc-3c5b-49ba-bf77-47bf658cd640/resource/d3fe3a9a-551b-407d-ba19-bfbad00f86e5/download/salarios-2016.csv',
-                       'presupuesto': 'http://datos.gob.ar/dataset/89f1a2dd-ad79-4211-87b4-44661d81ac0d/resource/84e23782-7d52-4724-a4ba-2f9621fa5f4e/download/presupuesto-2016.csv',
-                       'declaraciones-juradas': 'http://datos.gob.ar/dataset/5dde9735-6a0a-4f85-8afd-afc6854c3c2c/resource/f5101909-31be-45f5-aba8-c2b2459d29d5/download/declaraciones-juradas-2015.csv',
-                       'acceso-informacion-publica': 'http://datos.gob.ar/dataset/8bc053c8-efc2-485d-97d3-915c476d2741/resource/63952097-cdba-4fdd-be84-65fb400bdb1a/download/acceso-informacion-publica.csv',
-                       'pauta-oficial': 'http://datos.gob.ar/dataset/122808ec-dcd1-4a9b-aafe-8fa80ac2a2f4/resource/0c3cca0a-ccfa-4520-a614-dbdd58d74d79/download/pauta-oficial-primer-semestre-2016.csv',
-                       'contratos': 'http://datos.gob.ar/dataset/becaceb2-dbd0-4879-93bd-5f02bd3b8ca2/resource/bf2f67f4-9ab3-479b-a881-56b43565125e/download/contratos-2015.csv',
-                       'contrataciones-convocatorias': 'http://datos.gob.ar/dataset/069b5833-e57d-4d7a-859b-67a80cfdff20/resource/fa3603b3-0af7-43cc-9da9-90a512217d8a/download/convocatorias-2015.csv',
-                       'contrataciones-adjudicaciones': 'http://datos.gob.ar/dataset/069b5833-e57d-4d7a-859b-67a80cfdff20/resource/41fcfdb2-fdb3-4855-89b2-09d9f7c6bbc8/download/adjudicaciones-2015.csv',
-                       'contrataciones-proveedores-sipro': 'http://datos.gob.ar/dataset/069b5833-e57d-4d7a-859b-67a80cfdff20/resource/c19a2467-5232-41ae-bb0c-75dcd71e7c5f/download/proveedores-sipro.csv',
-                       'contrataciones-items-sibys': 'http://datos.gob.ar/dataset/069b5833-e57d-4d7a-859b-67a80cfdff20/resource/8d0dafbd-bd9c-48b6-81c3-05f492647974/download/items-sibys.csv'
-                       }
+URLS_FILE = 'urls-datasets-portal.yaml'
+with open(URLS_FILE) as f:
+    URL_DATASETS_PORTAL = yaml.load(f)
 
 # Devuelve el nombre del archivo a descargar, asumiendo que es la string entre la ultima "/" y el final de la URL
 def _nombre_csv(url):
     return url.split("/")[-1]
 
 def save_to_file(url):
-    """Dada la URL de un archivo, descargarlo y guardarlo en un directorio harcodeado (data/crudo/)
+    """Dada la URL de un archivo, descargarlo y guardarlo en el directorio actual.
 
     Args:
         url (str): URL del archivo a descargar.
         
-    #Returns:
-    
-    #Side Effects:
-        Le pega al marido, esconde alcohol en las lamparas
-        
-    Raises:
-        UnicodeDecodeError: Cuando se le canta
+    Side Effects:
+        Outputea mensajes de status con `print()`.
     """
     
     # Crear el archivo objetivo con codificacion UTF8 y escribir el contenido del request
@@ -79,16 +61,44 @@ def save_to_file(url):
 
         print("OK - el archivo {} se guardo exitosamente.".format(path))
 
-# Habria que agregarle un argumento de verbosidad a esta funcion
 def descargar_todo(url_dict):
-    # En docstring, agregar ejemplo de url_dict valido. En esta y cualquier otra variable
-    # donde el tipo no alcance para entender cuales son los valores validos.
+    """Dado un diccionario cuyos valores sean URLs de archivos, guardarlos en el directorio actual.
+
+    Las claves del diccionario se consideran "alias" para los archivos a descargar.
+    El nombre del archivo al que apunta la URL, se asume igual al string de texto entre la ultima barra "/" y el final de la URL. Por ejemplo, "http://datos.gob.ar/tremendo-archivo.csv" se guardara a "tremendo-archivo.csv".
+
+    Un ejemplo de `url_dict` valido podria ser el siguiente:
+	{ 'autos': 'https://www.cars.com/car-models.csv',
+        'bicis': 'http://www.americaenbici.com/dosruedas.txt'}
+
+    Args:
+        url_dict (str): URL del archivo a descargar.
+        
+    Side Effects:
+        Outputea mensajes de status con `print()`.
+    """
     for alias, url in url_dict.iteritems():
-        print("Descargando dataset \"{}\"... ".format(alias), end="")
-        sys.stdout.flush()
+        # sys.stdout.flush() fuerza la impresion de lo que se haya requerido hasta el momento
+        print("Descargando dataset \"{}\"... ".format(alias), end=""); sys.stdout.flush()
         save_to_file(url)
 
 def presentar_todo(url_dict):
+    """Dado un diccionario cuyos valores sean URLs de archivos, generar la presentacion de cada uno y guardarla en el directorio actual.
+
+    Las claves del diccionario se consideran "alias" para los archivos a presentar. El archivo generado se llamara `presentacion-<alias>.md`
+
+    El archivo al que apunta la URL se asume descargado al directorio actual con `descargar_todo()` o a mano.
+
+    Un ejemplo de `url_dict` valido podria ser el siguiente:
+	{ 'autos': 'https://www.cars.com/car-models.csv',
+        'bicis': 'http://www.americaenbici.com/dosruedas.txt'}
+
+    Args:
+        url_dict (str): URL del archivo a descargar.
+        
+    Side Effects:
+        Outputea mensajes de status con `print()`.
+    """
     for alias, url in URL_DATASETS_PORTAL.iteritems():
         print("Procesando dataset {}".format(alias))
 
@@ -98,6 +108,7 @@ def presentar_todo(url_dict):
     
     print("Procesamiento terminado!")
 
+# Hashea con MD5 un string arbitrario y devuelve el hash hexadecimal.
 def hash_str(string):
     return hashlib.md5(string).hexdigest()
 
@@ -157,4 +168,4 @@ class DataPresenter(object):
 
 if __name__ == '__main__':
     descargar_todo(URL_DATASETS_PORTAL)
-    #presentar_todo(URL_DATASETS_PORTAL)
+    presentar_todo(URL_DATASETS_PORTAL)
