@@ -118,65 +118,104 @@ def hash_str(string):
 class DataPresenter(object):
     """Objeto a cargo de generar la presentacion del dataset, y escribirla a STDOUT/archivo.
 
-    The __init__ method may be documented in either the class level
-    docstring, or as a docstring on the __init__ method itself.
-
-    Either form is acceptable, but the two should not be mixed. Choose one
-    convention to document the __init__ method and be consistent with it.
-
-    Note:
-        Do not include the `self` parameter in the ``Args`` section.
-
-    Args:
-        msg (str): Human readable string describing the exception.
-        code (:obj:`int`, optional): Error code.
-
     Attributes:
-        msg (str): Human readable string describing the exception.
-        code (int): Exception error code.
+        df (pandas.DataFrame): DataFrame a analizar, generado a partir del
+            contenido de `self.buffer`
+        presentation (StringIO): Una vez que se ejecuta el metodo
+            `self.present`,  este atributo guarda el contenido del informe.
+        hash_id (str): Hash MD5 del buffer que se uso para levantar el dataset.
+            Funciona como alias en caso de no tener uno.
 
     """
 
     def __init__(self, filepath_or_buffer, alias=None):
+        """Inicializa el presentador.
 
+        Al inicializar un objeto DataPresenter, no se genera ningun informe
+        todavia. Para ello, se debe invocar el metodo `self.present`, con las
+        opciones deseadas, que guardara el informe en el StringIO llamado
+        `self.presentation`.
+
+        Args:
+            filepath_or_buffer: Puede ser un buffer *abierto*, o el path
+            relativo a un CSV para leer a un buffer.
+            alias (str): Alias para usar en caso de necesitar nombrar el
+            dataset.
+
+        """
+        # Inicializo el buffer al cual se va a leer el CSV/dataset
         self.buffer = None
-
         if type(filepath_or_buffer)==file:
             self.buffer = filepath_or_buffer
         elif type(filepath_or_buffer) in [str,unicode] and os.path.isfile(filepath_or_buffer):
             self.buffer = open(filepath_or_buffer, 'r')
+        self.buffer.seek(0)
 
-        self.buffer.seek(0)
+        # Leo el dataset a un dataframe
         self.df = pd.read_csv(self.buffer, encoding='utf8')
-        # TODO: Es posible que cargar un df desde CSV, trabajarlo y dumpearlo a otro CSV cambie el hash generado?
         self.buffer.seek(0)
-        self.hash_id = hash_str(self.df.to_csv(encoding='utf8'))
+
+        # TODO: Es posible que cargar un df desde CSV, trabajarlo y dumpearlo a
+        # otro CSV cambie el hash generado?
+        # Genero un hash en funcion del contenido del buffer, que se usara como
+        # alias de ser necesario
+        self.hash_id = hash_str(self.buffer.read())
+        self.buffer.seek(0)
+
         self.alias = alias or hash_id
+
         # Este objeto guardara el informe generado.
         self.presentation = StringIO.StringIO()
 
-    # TODO: Separar generacion del informe de la presentacion del resultado (en STDOUT o file)
-    # Sugerencia: Libreria `stringIO`
     def present(self, modo = 'stdout'):
+        """En funcion de los parametros pasados, rellena `self.presentation`
+        con el informe del DataFrame
 
-        start_time = time.strftime('%Y/%m/%d@%H:%M:%S', time.localtime())
+        Por el momento, el unico parametro aceptado es `modo`, para determinar
+        el formato de tabla a utilizar.
+
+        Args:
+            modo(str): Puede ser 'stdout' o 'file'. Se utiliza unicamente para
+                decidir el formato de la data tabular ('simple' para 'stdout',
+                markdown-style para 'file')
+
+        """
 
 
+        # Vaciar la presentacion, en caso de que y se haya generado una antes
+        self.presentation.truncate(0)
+
+        # Funcion para generar representacion tabular de cierto DataFrame en
+        # una string.
         def tabular(df):
             formato = 'pipe' if modo=='file' else 'simple'
             return tabulate.tabulate(df, headers='keys', tablefmt=formato)
 
+        ####### COMIENZO INFORME #######
+
+        # Primera seccion: Informacion "global" del dataset:
+        # - header,
+        # - hash del CSV,
+        # - timestamp del informe,
+        # - nro de filas y columnas del dataset
         self.presentation.write("# Presentacion de Data Frame {}\n".format(self.alias))
+
+        start_time = time.strftime('%Y/%m/%d@%H:%M:%S', time.localtime())
         self.presentation.write("## Metadata\n- Fecha informe: {}\n- Hash MD5 DataFrame: {}\n".format(start_time, self.hash_id))
         self.presentation.write("## Caracteristicas generales\n")
         self.presentation.write("- Filas: {}\n- Columnas: {}\n".format(len(self.df), len(self.df.columns)))
+
+        # Segunda seccion: Informacion sumaria por columna no-float: 
+        # - dtype
+        # - cant. valores unicos y
+        # - 10 valores mas comunes
         self.presentation.write("## Nombre y tipo de dato por columna:\n")
 
         for col, dtype in self.df.select_dtypes(exclude=['float64']).dtypes.iteritems():
 
+            # Nombre del campo y `dtype`
             self.presentation.write("### CAMPO `{}` (dtype `{}`)\n".format(col, dtype))
 
-            # TODO: Agregar comments inline explicando que parte del output genera cierto fragmento de codigo
             grupo = self.df.groupby(col)
             self.presentation.write("- Valores unicos: {}\n".format(len(grupo)))
             self.presentation.write("- Diez valores mas comunes:\n")
@@ -186,6 +225,8 @@ class DataPresenter(object):
             top10 = agg[col].sort_values(by='count', ascending=False)[0:9]
             self.presentation.write(tabular(top10))
             self.presentation.write("\n\n")
+
+        ####### FIN INFORME #######
 
         # Rebobinar presentation
         self.presentation.seek(0)
