@@ -24,6 +24,8 @@ import tabulate
 import sys
 # Leer variables de archivos de configuracion
 import yaml
+# Manejar Strings como IO buffers/files
+import StringIO
 
 # Diccionario creado a mano con alias y URL de todo CSV del portal
 URLS_FILE = 'urls-datasets-portal.yaml'
@@ -39,17 +41,17 @@ def save_to_file(url):
 
     Args:
         url (str): URL del archivo a descargar.
-        
+
     Side Effects:
         Outputea mensajes de status con `print()`.
     """
-    
+
     # Crear el archivo objetivo con codificacion UTF8 y escribir el contenido del request
     path = _nombre_csv(url)
 
     if os.path.isfile(path):
         print("IGNORANDO - el archivo {} ya existe.".format(path))
-    
+
     else:
         # Obtener el CSV
         req = requests.get(url)
@@ -73,7 +75,7 @@ def descargar_todo(url_dict):
 
     Args:
         url_dict (str): URL del archivo a descargar.
-        
+
     Side Effects:
         Outputea mensajes de status con `print()`.
     """
@@ -95,76 +97,98 @@ def presentar_todo(url_dict):
 
     Args:
         url_dict (str): URL del archivo a descargar.
-        
+
     Side Effects:
         Outputea mensajes de status con `print()`.
     """
     for alias, url in URL_DATASETS_PORTAL.iteritems():
         print("Procesando dataset {}".format(alias))
 
-        df = pd.read_csv(_nombre_csv(url), encoding='utf8')
-        dp = DataPresenter(df, alias)
-        dp.present('file') 
-    
-    print("Procesamiento terminado!")
+        dp = DataPresenter(_nombre_csv(url), alias)
+        dp.present('file')
+        with codecs.open('presentacion-{}.md'.format(alias), 'w',
+                         encoding='utf8') as target:
+            target.write(dp.presentation.read())
+            dp.presentation.seek(0)
 
 # Hashea con MD5 un string arbitrario y devuelve el hash hexadecimal.
 def hash_str(string):
     return hashlib.md5(string).hexdigest()
 
 class DataPresenter(object):
-    
-    def __init__(self, df, alias=None):
-        self.df = df
+    """Objeto a cargo de generar la presentacion del dataset, y escribirla a STDOUT/archivo.
+
+    The __init__ method may be documented in either the class level
+    docstring, or as a docstring on the __init__ method itself.
+
+    Either form is acceptable, but the two should not be mixed. Choose one
+    convention to document the __init__ method and be consistent with it.
+
+    Note:
+        Do not include the `self` parameter in the ``Args`` section.
+
+    Args:
+        msg (str): Human readable string describing the exception.
+        code (:obj:`int`, optional): Error code.
+
+    Attributes:
+        msg (str): Human readable string describing the exception.
+        code (int): Exception error code.
+
+    """
+
+    def __init__(self, filepath_or_buffer, alias=None):
+
+        self.buffer = None
+
+        if type(filepath_or_buffer)==file:
+            self.buffer = filepath_or_buffer
+        elif type(filepath_or_buffer) in [str,unicode] and os.path.isfile(filepath_or_buffer):
+            self.buffer = open(filepath_or_buffer, 'r')
+
+        self.buffer.seek(0)
+        self.df = pd.read_csv(self.buffer, encoding='utf8')
         # TODO: Es posible que cargar un df desde CSV, trabajarlo y dumpearlo a otro CSV cambie el hash generado?
-        self.hash_id = hash_str(df.to_csv(encoding='utf8'))
+        self.buffer.seek(0)
+        self.hash_id = hash_str(self.df.to_csv(encoding='utf8'))
         self.alias = alias or hash_id
-        self.target = None
-        
+        # Este objeto guardara el informe generado.
+        self.presentation = StringIO.StringIO()
+
     # TODO: Separar generacion del informe de la presentacion del resultado (en STDOUT o file)
     # Sugerencia: Libreria `stringIO`
-    def present(self, modo = 'stdout', filename = None):
-        
-        start_time = time.strftime('%Y/%m/%d@%H:%M:%S', time.localtime())
-        
-        if modo == 'file':
-            path_to_file = "presentacion-{}.md".format(filename or self.alias)
-            self.target = open(path_to_file, 'w')
+    def present(self, modo = 'stdout'):
 
-        # Funcion para imprimir output a consola o archivo
-        def reportar(string):
-            if self.target:
-                self.target.write("{}\n".format(string).encode('utf8'))
-            else:
-                print(string)
-                
+        start_time = time.strftime('%Y/%m/%d@%H:%M:%S', time.localtime())
+
+
         def tabular(df):
-            formato = 'pipe' if self.target else 'simple'
+            formato = 'pipe' if modo=='file' else 'simple'
             return tabulate.tabulate(df, headers='keys', tablefmt=formato)
-        
-        reportar("# Presentacion de Data Frame {}".format(self.alias))
-        reportar("## Metadata\n- Fecha informe: {}\n- Hash MD5 DataFrame: {}\n".format(start_time, self.hash_id))
-        reportar("## Caracteristicas generales")
-        reportar("- Filas: {}\n- Columnas: {}\n".format(len(self.df), len(self.df.columns)))
-        reportar("## Nombre y tipo de dato por columna:")
-        
+
+        self.presentation.write("# Presentacion de Data Frame {}\n".format(self.alias))
+        self.presentation.write("## Metadata\n- Fecha informe: {}\n- Hash MD5 DataFrame: {}\n".format(start_time, self.hash_id))
+        self.presentation.write("## Caracteristicas generales\n")
+        self.presentation.write("- Filas: {}\n- Columnas: {}\n".format(len(self.df), len(self.df.columns)))
+        self.presentation.write("## Nombre y tipo de dato por columna:\n")
+
         for col, dtype in self.df.select_dtypes(exclude=['float64']).dtypes.iteritems():
 
-            reportar("### CAMPO `{}` (dtype `{}`)\n".format(col, dtype))
-            
+            self.presentation.write("### CAMPO `{}` (dtype `{}`)\n".format(col, dtype))
+
             # TODO: Agregar comments inline explicando que parte del output genera cierto fragmento de codigo
-            grupo = self.df.groupby(col)       
-            reportar("- Valores unicos: {}\n".format(len(grupo)))
-            reportar("- Diez valores mas comunes:\n")
-            
+            grupo = self.df.groupby(col)
+            self.presentation.write("- Valores unicos: {}\n".format(len(grupo)))
+            self.presentation.write("- Diez valores mas comunes:\n")
+
             f = {col:['count']}
             agg = grupo.aggregate(f)
             top10 = agg[col].sort_values(by='count', ascending=False)[0:9]
-            reportar(tabular(top10))
-            reportar("\n")
-            
-        if self.target:
-            self.target.close()
+            self.presentation.write(tabular(top10))
+            self.presentation.write("\n\n")
+
+        # Rebobinar presentation
+        self.presentation.seek(0)
 
 if __name__ == '__main__':
     descargar_todo(URL_DATASETS_PORTAL)
