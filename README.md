@@ -4,7 +4,7 @@ Genera estadisticas basicas sobre un dataset en formato CSV. Incluye algunas fun
 ## Índice 
 * [Instalación](#instalacion) 
 * [Dependencias](#dependencias) 
-* [Uso de `nombre-del-repo`](#uso-de-`data-presenter`) 
+* [Uso de `data-presenter`](#uso-de-data-presenter) 
 * [Créditos](#créditos) 
 * [Contacto](#contacto) 
 
