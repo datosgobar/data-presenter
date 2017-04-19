@@ -43,4 +43,4 @@ Refiéras a la documentación de cada método del módulo para mayores detalles.
 Este prototipo de presentador de datos est fuertemente inspirado en la función `csvstat` de  [`csvkit`](https://csvkit.readthedocs.io/en/1.0.1/), una muy completa librería para manipular CSVs con Python o la línea de comandos.
 
 ## Contacto
-Te invitamos a [crearnos un issue](https://github.com/datosgobar/data-presenter/issues/new?title=Encontré un bug en data-presenter) en caso de que encuentres algún bug o tengas comentarios de alguna parte de `data-presenter`. Para todo lo demás, podés mandarnos tu sugerencia o consulta a [datos@modernizacion.gob.ar](mailto:datos@modernizacion.gob.ar).
+Te invitamos a [crearnos un issue](https://github.com/datosgobar/data-presenter/issues/new?title=Encontré%20un%20bug%20en%20data-presenter) en caso de que encuentres algún bug o tengas comentarios de alguna parte de `data-presenter`. Para todo lo demás, podés mandarnos tu sugerencia o consulta a [datos@modernizacion.gob.ar](mailto:datos@modernizacion.gob.ar).
