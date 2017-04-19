@@ -2,7 +2,7 @@ estructura-organica-pen: 'http://datos.gob.ar/dataset/ad5b0e15-a9ed-40d5-9827-33
 audiencias: 'http://datos.gob.ar/dataset/2889b09e-31ca-4f90-912e-2a50db874e33/resource/dcc74a80-55fa-4e9c-b025-e0d321aa36ee/download/audiencias.csv'
 salarios-pen: 'http://datos.gob.ar/dataset/431381cc-3c5b-49ba-bf77-47bf658cd640/resource/d3fe3a9a-551b-407d-ba19-bfbad00f86e5/download/salarios-2016.csv'
 presupuesto: 'http://datos.gob.ar/dataset/89f1a2dd-ad79-4211-87b4-44661d81ac0d/resource/84e23782-7d52-4724-a4ba-2f9621fa5f4e/download/presupuesto-2016.csv'
-declaraciones-juradas: 'http://datos.gob.ar/dataset/5dde9735-6a0a-4f85-8afd-afc6854c3c2c/resource/f5101909-31be-45f5-aba8-c2b2459d29d5/download/declaraciones-juradas-2015.csv'
+declaraciones-juradas: 'http://datos.jus.gob.ar/dataset/4680199f-6234-4262-8a2a-8f7993bf784d/resource/b029969c-85a7-4adb-afe1-33165e835517/download/declaraciones-juradas-2015.csv'
 acceso-informacion-publica: 'http://datos.gob.ar/dataset/8bc053c8-efc2-485d-97d3-915c476d2741/resource/63952097-cdba-4fdd-be84-65fb400bdb1a/download/acceso-informacion-publica.csv'
 pauta-oficial: 'http://datos.gob.ar/dataset/122808ec-dcd1-4a9b-aafe-8fa80ac2a2f4/resource/0c3cca0a-ccfa-4520-a614-dbdd58d74d79/download/pauta-oficial-primer-semestre-2016.csv'
 contratos: 'http://datos.gob.ar/dataset/becaceb2-dbd0-4879-93bd-5f02bd3b8ca2/resource/bf2f67f4-9ab3-479b-a881-56b43565125e/download/contratos-2015.csv'
